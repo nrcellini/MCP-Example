@@ -76,7 +76,7 @@ def calculate(operation: Operation, a: float, b: float) -> float:
 @mcp.prompt(
     name="meeting_summary",
     description=(
-        "Generates an executive meeting-summary prompt from templates/Prompt.md. "
+        "Generates an executive meeting-summary prompt from templates/meeting-summary.md. "
         "Provide the meeting date, title, and full transcript to receive a structured summary "
         "covering overview, key decisions, action items, and follow-up required."
     ),
@@ -154,7 +154,7 @@ def math_word_problem_solver(problem: str) -> str:
 
 
 def main() -> None:
-    mcp.run()
+    mcp.run(transport="streamable-http")
 
 
 if __name__ == "__main__":
