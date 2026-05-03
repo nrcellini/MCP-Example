@@ -1,274 +1,310 @@
-# MCP Multi-Tool Server
+# MCP calculator server (Python)
 
-A comprehensive Model Context Protocol (MCP) server built with FastMCP that provides calculator tools, document resources, and prompt templates. This server demonstrates multiple MCP capabilities including tools, resources, and prompts in a single implementation.
+This folder contains a minimal [Model Context Protocol](https://modelcontextprotocol.io/) server built with the [MCP Python SDK](https://github.com/modelcontextprotocol/python-sdk). It exposes **exactly one tool**, `calculate`, for `add`, `subtract`, `multiply`, and `divide`.
 
-## Features
+The server uses the SDK’s high-level **`FastMCP`** API (`from mcp.server.fastmcp import FastMCP`), which matches how current PyPI releases structure the ergonomic server layer. (Some upstream docs show `MCPServer` from `mcp.server.mcpserver`; that layout applies to newer SDK revisions—the published package you install with `uv add "mcp[cli]"` uses **`FastMCP`** for the same style of `@mcp.tool()` handlers.)
 
-### 🧮 Calculator Tools
-- **Basic Operations**: Addition, subtraction, multiplication, division
-- **Advanced Math**: Power, square root, factorial calculations  
-- **Utility Functions**: Percentage calculations
-- **Error Handling**: Division by zero protection, negative square root protection, factorial range limits
+---
 
-### 📖 Document Resources  
-- **TypeScript SDK Resource**: Access to MCP TypeScript SDK documentation
-- **Dynamic File Reading**: Reads from configurable file paths
-- **Error Handling**: Graceful handling of missing files
+## What you will have at the end
 
-### 📝 Prompt Templates
-- **Meeting Summary Template**: Executive meeting summary generator
-- **Variable Substitution**: Dynamic template variable replacement
-- **Structured Output**: Professional meeting summary format
+- A **project-local virtual environment** (`.venv`) managed by **uv**
+- **`mcp[cli]`** installed into that environment via **uv**
+- A working **`server.py`** you can run with **`uv run`**, test with **MCP Inspector** (`mcp dev`), or attach to **Claude Desktop** / other MCP clients over **stdio**
 
-## Quick Start
+---
 
-### Prerequisites
-- Python 3.12 or later
-- `uv` package manager
+## Part 1 — Install and verify Python
 
-### Installation
+MCP’s Python materials assume a **modern Python 3** (for example **3.10+**). On Windows, **Python 3.14** is often a poor default today because some dependencies may not ship prebuilt wheels yet and can fall back to Rust/MSVC builds. This project declares **`requires-python = ">=3.10,<3.14"`** so installs stay on **3.10–3.13**.
 
-1. **Clone the repository**
-   ```bash
-   git clone <your-repo-url>
-   cd mcp-multi-tool-server
+### Option A — Python from python.org (good if you want a system install)
+
+1. Download and install Python for Windows from [https://www.python.org/downloads/windows/](https://www.python.org/downloads/windows/).
+2. During setup, enable **“Add python.exe to PATH”** (wording may vary slightly by installer version).
+3. **Close and reopen** your terminal (PowerShell or Windows Terminal).
+4. Verify:
+
+   ```powershell
+   py -0p
    ```
 
-2. **Install dependencies**
-   ```bash
-   uv sync
+   You should see one or more installed Python paths.
+
+5. Verify a concrete version (example using the launcher):
+
+   ```powershell
+   py -3.12 --version
    ```
 
-3. **Test the server**
-   ```bash
-   uv run mcp dev server.py
+   Example expected output shape:
+
+   ```text
+   Python 3.12.x
    ```
-   
-   Open http://localhost:3000 to test the server in MCP Inspector.
 
-## Usage
+   If `py -3.12` is not installed yet, try `py --version` and use whatever 3.10–3.13 build you have, or use Option B.
 
-### Calculator Tools
+### Option B — Let uv install a pinned Python (recommended for this repo)
 
-The server provides 8 calculator tools:
+From your project folder:
 
-| Tool | Description | Example |
-|------|-------------|---------|
-| `add` | Add two numbers | `add(5, 3) → 8` |
-| `subtract` | Subtract second from first | `subtract(10, 4) → 6` |
-| `multiply` | Multiply two numbers | `multiply(6, 7) → 42` |
-| `divide` | Divide first by second | `divide(15, 3) → 5` |
-| `power` | Raise to power | `power(2, 8) → 256` |
-| `square_root` | Calculate square root | `square_root(16) → 4` |
-| `factorial` | Calculate factorial | `factorial(5) → 120` |
-| `calculate_percentage` | Calculate percentage | `calculate_percentage(200, 15) → 30` |
-
-### TypeScript SDK Resource
-
-Access the TypeScript SDK documentation:
-
-```python
-# Resource URI: file://typesdk
-# Returns the contents of the TypeScript SDK documentation
+```powershell
+uv python install 3.12
 ```
 
-**Configuration**: Update `DESKTOP_FILE_PATH` in `server.py` to point to your documentation file:
-```python
-DESKTOP_FILE_PATH = r"C:\Users\Arnold\Desktop\typesdk.md"
+Verify uv sees it:
+
+```powershell
+uv python find 3.12
 ```
 
-### Meeting Summary Prompt
+You should get a path to a `python.exe` (uv’s managed install).
 
-Generate structured meeting summaries:
+---
 
-```python
-# Prompt: meeting_summary
-# Required parameters:
-# - meeting_date: Date of the meeting
-# - meeting_title: Title or purpose of the meeting  
-# - transcript: Meeting transcript or notes
+## Part 2 — Install and verify uv
+
+Install **uv** using the official Windows install command from the MCP documentation:
+
+```powershell
+powershell -ExecutionPolicy Bypass -c "irm https://astral.sh/uv/install.ps1 | iex"
 ```
 
-**Output Structure**:
-- Overview (purpose, participants, topics)
-- Key Decisions (major decisions, strategic changes)
-- Action Items (next steps, responsibilities, deadlines)
-- Follow-up Required (pending discussions, future meetings)
+**Close and reopen** your terminal so `uv` is on your `PATH`.
 
-## Claude Desktop Integration
+Verify:
 
-### Configuration
+```powershell
+uv --version
+```
 
-Add to your Claude Desktop config file:
+Example expected output shape:
 
-**Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
-**macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+```text
+uv x.y.z (...)
+```
+
+---
+
+## Part 3 — Project folder (you already created and opened it)
+
+These steps assume you are **already inside** your project directory (the folder that contains `server.py` and `pyproject.toml`).
+
+Confirm:
+
+```powershell
+Get-Location
+dir
+```
+
+You should see at least `pyproject.toml`, `server.py`, and this `README.md`.
+
+---
+
+## Part 4 — Virtual environment with uv
+
+uv will create and use **`.venv`** in the project root.
+
+### Pin Python (strongly recommended)
+
+This repo is tested with **Python 3.12** via uv:
+
+```powershell
+uv python pin 3.12
+```
+
+That creates/updates **`.python-version`** so `uv` consistently picks 3.12 for this folder.
+
+Verify the pin:
+
+```powershell
+Get-Content .python-version
+```
+
+Expected:
+
+```text
+3.12
+```
+
+### Create the venv and install dependencies
+
+```powershell
+uv sync
+```
+
+What this does:
+
+- Creates **`.venv`** if needed
+- Installs **`mcp[cli]`** and its dependencies **into `.venv`**
+
+Verify the environment exists:
+
+```powershell
+Test-Path .\.venv\Scripts\python.exe
+```
+
+Expected: `True`
+
+### (Optional) Activate the venv in your shell
+
+uv does **not** require activation because `uv run ...` uses `.venv` automatically, but activation is useful for interactive work:
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+```
+
+Verify:
+
+```powershell
+python --version
+where.exe python
+```
+
+You should see a **3.12.x** (or other 3.10–3.13) interpreter path **inside** `.venv`.
+
+Deactivate when finished:
+
+```powershell
+deactivate
+```
+
+---
+
+## Part 5 — Verify `mcp` and the CLI
+
+Run Python **through uv** so you definitely use `.venv`:
+
+```powershell
+uv run python -c "import mcp; print('mcp', mcp.__version__)"
+```
+
+You should see a version line with **no import error**.
+
+Verify the **`mcp` CLI** entry point shipped with `mcp[cli]`:
+
+```powershell
+uv run mcp --help
+```
+
+You should see help text for the `mcp` command (including subcommands like tooling for development workflows, depending on your installed version).
+
+---
+
+## Part 6 — What the server implements
+
+File: **`server.py`**
+
+- **`calculate(operation, a, b)`** — one MCP tool
+  - **`operation`**: `"add" | "subtract" | "multiply" | "divide"`
+  - **`a`**, **`b`**: floats
+  - **Divide** raises **`ValueError`** on division by zero
+
+No resources, no prompts—**tools only**, and only this one tool.
+
+---
+
+## Part 7 — Run the server (stdio)
+
+From the project root:
+
+```powershell
+uv run python server.py
+```
+
+This starts the MCP server on **stdio** (it may appear to “hang” with no output—that is normal; it is waiting for an MCP host).
+
+Stop with **Ctrl+C**.
+
+---
+
+## Part 8 — Develop and inspect with MCP Inspector
+
+Run (from the project root):
+
+```powershell
+uv run mcp dev server.py
+```
+
+Follow the CLI output to open **MCP Inspector** in the browser (commonly **`http://localhost:3000`**). There you can confirm the **`calculate`** tool schema and call it interactively.
+
+When you are done, stop the dev server with **Ctrl+C**.
+
+---
+
+## Part 9 — Claude Desktop (Windows) configuration
+
+Claude Desktop reads **`%AppData%\Claude\claude_desktop_config.json`**.
+
+1. Open that file in an editor (create it if missing).
+2. Merge a server entry like the following (adjust the **`--directory`** path to your **absolute** project folder).
 
 ```json
 {
   "mcpServers": {
-    "multi-tool-server": {
+    "calculator": {
       "command": "uv",
       "args": [
         "--directory",
-        "/path/to/your/server/directory",
+        "C:\\Users\\YourUser\\Documents\\GitHub\\YourProjectFolder",
         "run",
         "python",
         "server.py"
-      ],
-      "env": {
-        "UV_PROJECT_ENVIRONMENT": ".venv"
-      }
+      ]
     }
   }
 }
 ```
 
-### Restart Claude Desktop
+Notes:
 
-After updating the configuration, restart Claude Desktop to load the server.
+- Use **escaped backslashes** (`\\`) in JSON on Windows.
+- If `uv` is not found by Claude Desktop’s environment, set **`command`** to the **full path** returned by:
 
-## Development
+  ```powershell
+  where.exe uv
+  ```
 
-### Project Structure
-
-```
-mcp-multi-tool-server/
-├── server.py                 # Main server implementation
-├── templates/
-│   └── Prompt.md             # Meeting summary template
-├── pyproject.toml            # Project configuration
-├── claude_desktop_config.json # Claude Desktop config example
-├── README.md                 # This file
-└── .venv/                    # Virtual environment
-```
-
-### Testing
-
-**MCP Inspector (Recommended)**
-```bash
-uv run mcp dev server.py
-```
-
-**Direct Server Testing**
-```bash
-python server.py
-```
-
-**Testing Individual Components**
-
-1. **Calculator Tools**: Use MCP Inspector to call each tool with test parameters
-2. **Resource Access**: Check the resource tab in MCP Inspector for `file://typesdk`  
-3. **Prompt Templates**: Test the `meeting_summary` prompt with sample data
-
-### Customization
-
-**Adding New Calculator Tools**:
-```python
-@mcp.tool()
-def new_calculation(param1: float, param2: float) -> float:
-    """Description of the new calculation."""
-    return param1 + param2  # Your calculation logic
-```
-
-**Adding New Resources**:
-```python
-@mcp.resource("file://your-resource")
-async def get_your_resource() -> str:
-    """Description of your resource."""
-    # Your resource logic
-    return "Resource content"
-```
-
-**Adding New Prompts**:
-```python
-@mcp.prompt("your_prompt")
-async def your_prompt(param1: str, param2: str) -> str:
-    """Description of your prompt."""
-    # Your prompt logic
-    return f"Processed: {param1}, {param2}"
-```
-
-## Error Handling
-
-The server includes comprehensive error handling:
-
-- **Division by Zero**: Returns appropriate error message
-- **Negative Square Roots**: Prevents invalid operations
-- **Factorial Limits**: Restricts calculations to reasonable ranges (n ≤ 100)
-- **File Not Found**: Graceful handling of missing resource files
-- **Template Errors**: Proper error reporting for prompt template issues
-
-## Configuration Options
-
-### File Paths
-
-Update these paths in `server.py` for your environment:
-
-```python
-# TypeScript SDK documentation path
-DESKTOP_FILE_PATH = r"C:\Users\YourUser\Desktop\typesdk.md"
-
-# Prompt template path (relative to server.py)
-PROMPT_TEMPLATE_PATH = os.path.join(os.path.dirname(__file__), "templates", "Prompt.md")
-```
-
-### Server Name
-
-Change the server name in `server.py`:
-```python
-mcp = FastMCP("Your Server Name")
-```
-
-## Troubleshooting
-
-### Common Issues
-
-**Server won't start**:
-- Check Python version (3.12+ required)
-- Verify `uv` installation: `uv --version`
-- Check virtual environment: `uv sync`
-
-**Tools not appearing in Claude**:
-- Verify Claude Desktop config file location
-- Check file paths in configuration
-- Restart Claude Desktop after config changes
-
-**Resource file not found**:
-- Verify `DESKTOP_FILE_PATH` points to correct file
-- Check file permissions
-- Ensure file exists and is readable
-
-**Prompt template errors**:
-- Verify `templates/Prompt.md` exists
-- Check template syntax
-- Ensure proper variable placeholders: `{{ variable_name }}`
-
-### Debug Mode
-
-Run with debug output:
-```bash
-uv run python server.py --debug
-```
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature-name`
-3. Make your changes
-4. Add tests for new functionality
-5. Submit a pull request
-
-## License
-
-This project is licensed under the MIT License. See LICENSE file for details.
-
-## Resources
-
-- [MCP Documentation](https://modelcontextprotocol.io/)
-- [FastMCP GitHub](https://github.com/jlowin/fastmcp)
-- [Claude Desktop MCP Setup](https://claude.ai/docs)
+3. **Fully quit and restart** Claude Desktop after saving the file.
 
 ---
 
-**Built with FastMCP** - A high-level Python library for building MCP servers. 
+## Part 10 — Troubleshooting
+
+### `uv sync` tries to compile `pydantic-core` / Rust / MSVC errors
+
+- Prefer **Python 3.12 or 3.13** (this repo blocks **3.14** in `pyproject.toml` for that reason).
+- Install **“Build Tools for Visual Studio”** with **Desktop development with C++** only if you truly must compile native wheels locally.
+
+### `uv` or `python` not found after install
+
+- Close **all** terminals and reopen.
+- Confirm `uv` with `where.exe uv` and Python with `py -0p`.
+
+### Claude Desktop never shows tools
+
+- Confirm **`claude_desktop_config.json`** JSON is valid.
+- Confirm **`--directory`** points at the folder that contains **`pyproject.toml`** and **`server.py`**.
+- Confirm **`uv run python server.py`** works manually from that folder.
+
+---
+
+## Quick command recap
+
+```powershell
+uv python install 3.12
+uv python pin 3.12
+uv sync
+uv run python -c "import mcp; print(mcp.__version__)"
+uv run mcp --help
+uv run python server.py
+uv run mcp dev server.py
+```
+
+---
+
+## References
+
+- MCP concepts and clients: [https://modelcontextprotocol.io/](https://modelcontextprotocol.io/)
+- MCP Python SDK repository: [https://github.com/modelcontextprotocol/python-sdk](https://github.com/modelcontextprotocol/python-sdk)

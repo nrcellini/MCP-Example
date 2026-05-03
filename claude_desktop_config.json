@@ -1,17 +1,14 @@
 {
   "mcpServers": {
-    "calculator-server": {
+    "calculator": {
       "command": "uv",
       "args": [
         "--directory",
-        "C:\\Users\\Arnold\\Desktop\\MCP Server COurse",
+        "C:\\Users\\Nico Cellini\\Documents\\GitHub\\MCP-Example",
         "run",
         "python",
         "server.py"
-      ],
-      "env": {
-        "UV_PROJECT_ENVIRONMENT": ".venv"
-      }
+      ]
     }
   }
-} 
+}
